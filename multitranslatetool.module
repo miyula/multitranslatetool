@@ -1,0 +1,117 @@
+<?php
+// $Id$
+/**
+ * @file
+ * Provide translation service for multi language. The translate function is provided by Microsoft Bing Translator.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function multitranslatetool_help(){
+    
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function multitranslatetool_menu(){
+    $menu['admin/settings/multitranslatetool'] = array(
+        'title' => t('Multi Translate Tool settings'),
+        'description' => t('Configure translate app id and enable the translate function or not.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('multitranslate_admin_settings_form'),
+        'access arguments' => array('administer site configuration'),
+        'type' => MENU_NORMAL_ITEM,
+    );
+    $menu['admin/settings/multitranslatetool/settings'] = array(
+        'title' => t('Setting'),
+        'description' => t('Configure translate app id and enable the translate function or not.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('multitranslate_admin_settings_form'),
+        'access arguments' => array('administer site configuration'),
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+    );
+    $menu['admin/settings/multitranslatetool/demo'] = array(
+        'title' => t('Demo'),
+        'description' => t('Demostrate the way to use translate tool.'),
+        'page callback' => 'admin_settings_multitranslatetool_demo_callback',
+        'access arguments' => array('administer site configuration'),
+        'type' => MENU_LOCAL_TASK,
+        'weight' => 2,
+    );
+    $menu['ajaxtranslate'] = array(
+        'title' => t('Ajax translate'),
+        'page callback' => 'ajax_translate_callback',
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+    return $menu;
+}
+
+/**
+ * Menu callback for admin/settings/multitranslatetool/demo
+ */
+function admin_settings_multitranslatetool_demo_callback(){
+    drupal_add_js(drupal_get_path('module','multitranslatetool').'/bing-translator-tool.js');
+    //add setting: Drupal.settings.ajaxtranslate_url
+    drupal_add_js(array('ajaxtranslate_url'=>url('ajaxtranslate')),'setting');
+    
+    $content = '<h2>Text:</h2>';
+    $content.= '<div class="to_translate_content">';
+    $content.= 'To start using the AJAX API for the Microsoft Translator service all you need to do is to direct an ajax call to the appropiate http://api.microsofttranslator.com/V2/Ajax.svc method and register a callback function and that\'s it, the translator api will handle the heavy lifting and pass the results of the method back to a registered callback function and part of this heavy lifting is the encodeURIcomponent function which is provided to escape utf characters that may be present in the strings that we pass to the translator service. How this all works is to dynamically register a html script element to the <head> tag of the page via acessing the DOM. Within this script is contained the call to the translator ajax service api, as well as a callback function. Once the AJAX call to the Microsoft Translator API is complete, the API will return to the callback handler function that we have previously nominated.';
+    $content.= '</div>';
+    return $content;
+}
+
+/**
+ * Menu callback for ajaxtranslate
+ */
+function ajax_translate_callback(){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    
+    //get paramerts
+    $parameters = $_REQUEST;
+    if(empty ($parameters['method'])){
+        $result = new stdClass();
+        $result->status = 0;
+        $result->message = 'The request method is required';
+        print(json_encode($result));
+        exit;
+    }
+    $request_url = 'http://api.microsofttranslator.com/V2/Ajax.svc/'.$parameters['method'].'?appId='.variable_get('multitranslate_app_id', '51F6059F8F133980A5954E67BEC7793A70071B91'); 
+    foreach($parameters as $key=> $p){
+        $request_url.= '&'.$key.'='.$p;
+    }
+    
+    $ch = curl_init($request_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    $data = curl_exec($ch);
+    curl_close($ch);
+    
+    print $data;
+    
+}
+
+/** Form for multi translate tool setting **/
+function multitranslate_admin_settings_form(){
+    $form['appid'] = array(
+        '#type'     => 'textfield',
+        '#title'    => t('App ID'),
+        '#default_value' => variable_get('multitranslate_app_id', '51F6059F8F133980A5954E67BEC7793A70071B91'),
+        '#required' => TRUE,
+        '#description'   => t('The App ID is used for Microsoft Bing translator. It can be applyed from '.l('here','https://ssl.bing.com/webmaster/Developers/Home').'.'),
+    );
+    $form['submit'] = array(
+        '#type'     => 'submit',
+        '#value'    => t('Save'),
+    );
+    return $form;
+}
+function multitranslate_admin_settings_form_submit($form, &$form_state){
+    $appid = $form_state['values']['appid'];
+    variable_set('multitranslate_app_id', $appid);
+    
+    drupal_set_message(t('Saved the configuration'));
+}
+

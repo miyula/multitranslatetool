@@ -1,0 +1,14 @@
+<?php
+/**
+  * Implementation of hook_install().
+  */
+function multitranslatetool_install(){
+    variable_set('multitranslate_app_id', '51F6059F8F133980A5954E67BEC7793A70071B91');
+}
+
+/**
+  * Implementation of hook_uninstall().
+  */
+function multitranslatetool_uninstall(){
+    variable_del('multitranslate_app_id');
+}

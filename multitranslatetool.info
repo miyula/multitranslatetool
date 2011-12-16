@@ -1,0 +1,6 @@
+; $Id$
+name = "Multi Translate Tool"
+description = "Provide translation service for multi language. The translate function is provided by Microsoft Bing Translator"
+;dependencies[] = jquery_ui
+core = 6.x
+php = 5.x
